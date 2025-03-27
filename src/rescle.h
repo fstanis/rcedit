@@ -141,9 +141,11 @@ class ResourceUpdater {
   bool SetIcon(const WCHAR* path, const LANGID& langId);
   bool SetIcon(const WCHAR* path);
   bool SetExecutionLevel(const WCHAR* value);
+  bool SetExecutionLevelUIAccess(const WCHAR* value);
   bool IsExecutionLevelSet();
   bool SetApplicationManifest(const WCHAR* value);
   bool IsApplicationManifestSet();
+  void PrintManifest();
   bool Commit();
 
  private:
@@ -156,6 +158,7 @@ class ResourceUpdater {
   HMODULE module_;
   std::wstring filename_;
   std::wstring executionLevel_;
+  std::wstring uiAccess_;
   std::wstring originalExecutionLevel_;
   std::wstring applicationManifestPath_;
   std::wstring manifestString_;

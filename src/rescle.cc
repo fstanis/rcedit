@@ -14,6 +14,7 @@
 #include <fstream>
 #include <codecvt>
 #include <algorithm>
+#include <iostream>
 
 namespace rescle {
 
@@ -429,6 +430,15 @@ bool ResourceUpdater::SetExecutionLevel(const WCHAR* value) {
   return true;
 }
 
+bool ResourceUpdater::SetExecutionLevelUIAccess(const WCHAR* value) {
+  uiAccess_ = value;
+  if (uiAccess_ != L"true" && uiAccess_ != L"false") {
+    uiAccess_.clear();
+    return false;
+  }
+  return true;
+}
+
 bool ResourceUpdater::IsExecutionLevelSet() {
   return !executionLevel_.empty();
 }
@@ -694,6 +704,10 @@ bool ResourceUpdater::SetIcon(const WCHAR* path) {
   return SetIcon(path, langId);
 }
 
+void ResourceUpdater::PrintManifest() {
+  std::wcout << manifestString_ << std::endl;
+}
+
 bool ResourceUpdater::Commit() {
   if (module_ == NULL) {
     return false;
@@ -724,6 +738,30 @@ bool ResourceUpdater::Commit() {
     while ((pos = manifestString_.find(originalExecutionLevel_, pos)) != std::string::npos) {
       manifestString_.replace(pos, originalExecutionLevel_.length(), executionLevel_);
       pos += executionLevel_.length();
+    }
+
+    // if UI access is requested, handle the uiAccess attribute
+    if (!uiAccess_.empty()) {
+      // First check if uiAccess attribute already exists
+      std::wstring::size_type uiAccessPos = manifestString_.find(L"uiAccess=");
+      if (uiAccessPos != std::wstring::npos) {
+        // uiAccess attribute exists, update its value
+        std::wstring quote = manifestString_.substr(uiAccessPos + 9, 1);
+        std::wstring::size_type valueStartPos = uiAccessPos + 10; // Length of 'uiAccess="'
+        std::wstring::size_type valueEndPos = manifestString_.find(quote, valueStartPos);
+        if (valueEndPos != std::wstring::npos) {
+          // Replace the existing value with "true"
+          manifestString_.replace(valueStartPos, valueEndPos - valueStartPos, uiAccess_);
+        }
+      } else {
+        // uiAccess attribute doesn't exist, add it after the level attribute
+        std::wstring::size_type levelPos = manifestString_.find(L"level=\"" + executionLevel_ + L"\"");
+        if (levelPos != std::wstring::npos) {
+          // Position right after the closing quote of the level attribute
+          std::wstring::size_type insertPos = levelPos + 7 + executionLevel_.length() + 1;
+          manifestString_.insert(insertPos, L" uiAccess=\"" + uiAccess_ + L"\"");
+        }
+      }
     }
 
     // clean old padding and add new padding, ensuring that the size is a multiple of 4
