@@ -64,6 +64,12 @@ Set [requested execution level](https://msdn.microsoft.com/en-us/library/6ad1fsh
 $ rcedit "path-to-exe-or-dll" --set-requested-execution-level "requireAdministrator"
 ```
 
+Set [uiAccess](https://msdn.microsoft.com/en-us/library/6ad1fshk.aspx#Anchor_9) for the requested execution level (must be used with `--set-requested-execution-level`):
+
+```bash
+$ rcedit "path-to-exe-or-dll" --set-requested-execution-level "asInvoker" --set-ui-access "true"
+```
+
 Set [application manifest](https://msdn.microsoft.com/en-us/library/windows/desktop/aa374191.aspx):
 
 ```bash
@@ -88,4 +94,10 @@ Get resource string:
 
 ```bash
 $ rcedit "path-to-exe-or-dll" --get-resource-string id_number
+```
+
+Print the current manifest:
+
+```bash
+$ rcedit "path-to-exe-or-dll" --print-manifest
 ```

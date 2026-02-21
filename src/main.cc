@@ -47,12 +47,14 @@ void print_help(VS_FIXEDFILEINFO* file_info) {
 "Usage: rcedit <filename> [options...]\n\n"
 "Options:\n"
 "  -h, --help                                 Show this message\n"
+"  --print-manifest                           Print current manifest\n"
 "  --set-version-string <key> <value>         Set version string\n"
 "  --get-version-string <key>                 Print version string\n"
 "  --set-file-version <version>               Set FileVersion\n"
 "  --set-product-version <version>            Set ProductVersion\n"
 "  --set-icon <path-to-icon>                  Set file icon\n"
 "  --set-requested-execution-level <level>    Pass nothing to see usage\n"
+"  --set-ui-access <bool>                     Set uiAccess for requestedExecutionLevel\n"
 "  --application-manifest <path-to-file>      Set manifest file\n"
 "  --set-resource-string <key> <value>        Set resource string\n"
 "  --get-resource-string <key>                Get resource string\n"
@@ -173,6 +175,19 @@ int wmain(int argc, const wchar_t* argv[]) {
       if (!updater.SetExecutionLevel(argv[++i]))
         return print_error("Unable to set execution level");
 
+    } else if (wcscmp(argv[i], L"--set-ui-access") == 0) {
+      if (argc - i < 2)
+        return print_error("--set-ui-access requires 'true' or 'false'");
+
+      if (updater.IsApplicationManifestSet())
+        print_warning("--set-ui-access is ignored if --application-manifest is set");
+
+      if (!updater.IsExecutionLevelSet())
+        return print_error("--set-requested-execution-level must be set before --set-ui-access");
+
+      if (!updater.SetExecutionLevelUIAccess(argv[++i]))
+        return print_error("--set-ui-access requires 'true' or 'false'");
+
     } else if (wcscmp(argv[i], L"--application-manifest") == 0 ||
       wcscmp(argv[i], L"-am") == 0) {
       if (argc - i < 2)
@@ -226,7 +241,9 @@ int wmain(int argc, const wchar_t* argv[]) {
 
       fwprintf(stdout, L"%s", result);
       return 0;  // no changes made
-
+    } else if (wcscmp(argv[i], L"--print-manifest") == 0) {
+      updater.PrintManifest();
+      return 0; // no changes made
     } else {
       if (loaded) {
         fprintf(stderr, "Unrecognized argument: \"%ls\"\n", argv[i]);

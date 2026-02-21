@@ -429,6 +429,15 @@ bool ResourceUpdater::SetExecutionLevel(const WCHAR* value) {
   return true;
 }
 
+bool ResourceUpdater::SetExecutionLevelUIAccess(const WCHAR* value) {
+  uiAccess_ = value;
+  if (uiAccess_ != L"true" && uiAccess_ != L"false") {
+    uiAccess_.clear();
+    return false;
+  }
+  return true;
+}
+
 bool ResourceUpdater::IsExecutionLevelSet() {
   return !executionLevel_.empty();
 }
@@ -694,6 +703,10 @@ bool ResourceUpdater::SetIcon(const WCHAR* path) {
   return SetIcon(path, langId);
 }
 
+void ResourceUpdater::PrintManifest() {
+  fwprintf(stdout, L"%s\n", manifestString_.c_str());
+}
+
 bool ResourceUpdater::Commit() {
   if (module_ == NULL) {
     return false;
@@ -724,6 +737,38 @@ bool ResourceUpdater::Commit() {
     while ((pos = manifestString_.find(originalExecutionLevel_, pos)) != std::string::npos) {
       manifestString_.replace(pos, originalExecutionLevel_.length(), executionLevel_);
       pos += executionLevel_.length();
+    }
+
+    // if UI access is requested, handle the uiAccess attribute
+    if (!uiAccess_.empty()) {
+      // First check if uiAccess attribute already exists
+      std::wstring uiAccessKey = L"uiAccess=";
+      std::wstring::size_type uiAccessPos = manifestString_.find(uiAccessKey);
+      if (uiAccessPos != std::wstring::npos) {
+        // uiAccess attribute exists, update its value
+        std::wstring::size_type quotePos = uiAccessPos + uiAccessKey.length();
+        std::wstring quote = manifestString_.substr(quotePos, 1);
+        std::wstring::size_type valueStartPos = quotePos + 1;
+        std::wstring::size_type valueEndPos = manifestString_.find(quote, valueStartPos);
+        if (valueEndPos != std::wstring::npos) {
+          manifestString_.replace(valueStartPos, valueEndPos - valueStartPos, uiAccess_);
+        }
+      } else {
+        // uiAccess attribute doesn't exist, add it after the level attribute
+        std::wstring::size_type relPos = manifestString_.find(L"requestedExecutionLevel");
+        if (relPos != std::wstring::npos) {
+          std::wstring levelKey = L"level=";
+          std::wstring::size_type levelPos = manifestString_.find(levelKey, relPos);
+          if (levelPos != std::wstring::npos) {
+            std::wstring::size_type quotePos = levelPos + levelKey.length();
+            std::wstring quote = manifestString_.substr(quotePos, 1);
+            std::wstring::size_type valueEnd = manifestString_.find(quote, quotePos + 1);
+            if (valueEnd != std::wstring::npos) {
+              manifestString_.insert(valueEnd + 1, L" uiAccess=" + quote + uiAccess_ + quote);
+            }
+          }
+        }
+      }
     }
 
     // clean old padding and add new padding, ensuring that the size is a multiple of 4
